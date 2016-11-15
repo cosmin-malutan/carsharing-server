@@ -1,0 +1,9 @@
+{
+    "mongoDB": {
+        "address": "localhost",
+        "port": "27017",
+        "database": "carsharing"
+    },
+    "serviceRunningPort": 8080,
+    "log_location": ".tmp/metrics_log.log"
+}
