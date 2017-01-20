@@ -1,34 +1,33 @@
-var co = require('co');
-var Promise = require('promise');
-var MongoClient = require('mongodb').MongoClient;
+import co from 'co';
+import Promise from 'promise';
+import MongoClient from 'mongodb';
 
-var config = require('./config');
+import config from './config';
 
-function MongoDBHelper (logger) {
-    var that = this;
+export default class MongoDBHelper {
+    constructor (logger) {
+        this.logger = logger;
+    }
+    init() {
+        var that = this;
 
-    this.logger = logger;
-}
+        return new Promise(function (fulfill, reject) {
+            co(function*() {
+                // Use connect method to connect to the server
+                that.mongodb = yield MongoClient.connect(`mongodb://${config.mongoDB.address}:${config.mongoDB.port}/${config.mongoDB.database}`);
 
-MongoDBHelper.prototype.init = function () {
-    var that = this;
+                that.usersCollection = yield that.mongodb.createCollection("users");
+                yield that.usersCollection.createIndex({ email : -1 }, { unique:true });
+                yield that.usersCollection.createIndex({ username : -1 });
+                yield that.usersCollection.createIndex({ "position" : "2dsphere" });
 
-    return new Promise(function (fulfill, reject) {
-        co(function*() {
-            // Use connect method to connect to the server
-            that.mongodb = yield MongoClient.connect(`mongodb://${config.mongoDB.address}:${config.mongoDB.port}/${config.mongoDB.database}`);
-
-            that.usersCollection = yield that.mongodb.createCollection("users");
-            yield that.usersCollection.createIndex({ email : -1 }, { unique:true });
-            yield that.usersCollection.createIndex({ username : -1 });
-            yield that.usersCollection.createIndex({ "position" : "2dsphere" });
-
-            fulfill(that.mongodb);
-        }).catch(function(err) {
-            that.logger.log("error", "MongoDBHelper.init", err);
-            reject(err);
+                fulfill(that.mongodb);
+            }).catch(function(err) {
+                that.logger.log("error", "MongoDBHelper.init", err);
+                reject(err);
+            });
         });
-    });
+    }
 }
 
 MongoDBHelper.prototype.findUser = function (email) {
@@ -110,4 +109,3 @@ MongoDBHelper.prototype.assureUniqueEmail = function (email) {
         });
     });
 }
-module.exports = MongoDBHelper;

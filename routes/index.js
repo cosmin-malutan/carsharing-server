@@ -1,6 +1,6 @@
-var auth = require('./auth');
+import auth from './auth';
 
-module.exports = function(logger, app, dbHelper, passportHelper) {
+export default function(logger, app, dbHelper, passportHelper) {
     auth(logger, app, dbHelper, passportHelper);
 
 	app.get('/', function(req, res) {

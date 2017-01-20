@@ -1,24 +1,23 @@
-var os = require('os');
-var fs = require('fs');
-var co = require('co');
+import os from 'os';
+import fs from 'fs';
+import co from 'co';
 
-var Influx = require('influx');
-var bodyParser = require('body-parser');
-var express = require('express');
-var session = require('express-session');
+import Influx from 'influx';
+import bodyParser from 'body-parser';
+import express from 'express';
+import session from 'express-session';
 
-var winston = require('winston');
-var FileRotateDate = require('winston-filerotatedate');
+import winston from 'winston';
+import FileRotateDate from 'winston-filerotatedate';
 
-var config = require('./config');
+import config from './config';
 
-var routes = require('./routes');
+import routes from './routes';
 
-var MongodbHelper = require('./mongodbHelper');
-var PassportHelper = require('./passportHelper');
+import MongodbHelper from './mongodbHelper';
+import PassportHelper from './passportHelper';
 
-
-var logger = new(winston.Logger)({
+const logger = new(winston.Logger)({
   transports: [
 		new (winston.transports.Console)({
 			timestamp: true,
@@ -32,12 +31,12 @@ var logger = new(winston.Logger)({
 	],
 });
 
-var dbHelper = new MongodbHelper(logger);
-dbHelper.init().then(function () {
-	var passportHelper = new PassportHelper(logger, dbHelper);
+const dbHelper = new MongodbHelper(logger);
+dbHelper.init().then(() => {
+	const passportHelper = new PassportHelper(logger, dbHelper);
 
 	// Start express
-	var app = express();
+	const app = express();
 	app.use(bodyParser.json());
 	app.use(session({
 		resave: false,
@@ -49,9 +48,9 @@ dbHelper.init().then(function () {
 
 	routes(logger, app, dbHelper, passportHelper);
 
-	app.listen(config.serviceRunningPort, function () {
+	app.listen(config.serviceRunningPort, () => {
 		logger.log('info', `App listening on port ${os.hostname()}:${config.serviceRunningPort}`);
 	});
-}).catch(function(err) {
+}).catch((err) => {
 	logger.log('error', err);
 });

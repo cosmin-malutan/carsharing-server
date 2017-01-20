@@ -1,4 +1,4 @@
-module.exports = function (logger, app, dbHelper, passportHelper) {
+export default function auth(logger, app, dbHelper, passportHelper) {
   app.post('/signup', passportHelper.passport.authenticate('local-signup'), function(req, res) {
 		res.status(200).send('{"status": "success"}');
 	});
