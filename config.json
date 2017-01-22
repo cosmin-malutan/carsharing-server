@@ -2,8 +2,10 @@
     "mongoDB": {
         "address": "localhost",
         "port": "27017",
-        "database": "carsharing"
+        "database": "carsharing",
+        "sessionsCollection": "sessions"
     },
+    "sessionSecret": "keyboard",
     "serviceRunningPort": 8080,
     "log_location": ".tmp/metrics_log.log"
 }

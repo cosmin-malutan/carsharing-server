@@ -1,7 +1,13 @@
 
 import passport from 'passport';
 import LocalStrategy from 'passport-local';
+
+import cookie from 'cookie';
+import signature from 'cookie-signature';
+
 import Promise from 'promise';
+
+import config from './config';
 
 export default class PassportHelper {
     constructor (logger, dbHelper) {
@@ -59,6 +65,18 @@ export default class PassportHelper {
                 done(err, null);
             })
         }));
+    }
+    getSessionId(request) {
+        const raw = cookie.parse(request.headers.cookie)['connect.sid'];
+        if (raw) {
+        if (raw.substr(0, 2) === 's:') {
+            return signature.unsign(raw.slice(2), config.sessionSecret);
+        }
+
+        return false;
+        }
+
+        return false;
     }
 }
 
