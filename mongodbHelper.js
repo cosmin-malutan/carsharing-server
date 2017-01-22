@@ -28,84 +28,74 @@ export default class MongoDBHelper {
             });
         });
     }
-}
 
-MongoDBHelper.prototype.findUser = function (email) {
-    var that = this;
+    findUser(email) {
+        return new Promise((fulfill, reject) => {
+            this.usersCollection.findOne({
+                email: email
+            }).then(fulfill).catch((err) => {
+                this.logger.log("error", "MongoDBHelper:findUser", err);
+                reject(err);
+            });
+        }); 
+    }
 
-    return new Promise(function (fulfill, reject) {
-        that.usersCollection.findOne({
-            email: email
-        }).then(fulfill).catch((err) => {
-            that.logger.log("error", "MongoDBHelper:findUser", err);
-            reject(err);
-        });
-    }); 
-};
-
-MongoDBHelper.prototype.createUser = function (user) {
-    var that = this;
-
-    return new Promise(function (fulfill, reject) {
-        var doc = {
-            "email": user.email,
-            "username": user.username,
-            "password": user.password
-        };
-
-        if (user.coordinates) {
-            doc["position"] = {
-                type: "Point",
-                coordinates: user.coordinates
+    createUser(user) {
+        return new Promise((fulfill, reject) => {
+            var doc = {
+                "email": user.email,
+                "username": user.username,
+                "password": user.password
             };
-        }
 
-        that.usersCollection.insertOne(doc).then(fulfill).catch((err) => {
-            that.logger.log("error", "MongoDBHelper:createUser", err);
-            reject(err);
-        });
-    });
-};
-
-MongoDBHelper.prototype.updateUserLocation = function (username, coordinates) {
-    var that = this;
-
-    return new Promise(function (fulfill, reject) {
-        that.usersCollection.findOneAndUpdate({
-            email: email
-        }, {
-            $set: {
-                coordinates: coordinates
+            if (user.coordinates) {
+                doc["position"] = {
+                    type: "Point",
+                    coordinates: user.coordinates
+                };
             }
-        }).then(fulfill).catch((err) => {
-            that.logger.log("error", "MongoDBHelper:updateUserLocation", err);
-            reject(err);
+
+            this.usersCollection.insertOne(doc).then(fulfill).catch((err) => {
+                this.logger.log("error", "MongoDBHelper:createUser", err);
+                reject(err);
+            });
         });
-    });    
-}
+    };
 
-MongoDBHelper.prototype.assureUniqueUsername = function (username) {
-    var that = this;
-
-    return new Promise(function (fulfill, reject) {
-        that.usersCollection.find({username: username}).toArray().then(function(result) {
-            fulfill(result.length === 0);
-        }).catch((err) => {
-            that.logger.log("error", "MongoDBHelper:assureUniqueUsername", err);
-            reject(err);
+    assureUniqueEmail(email) {
+        return new Promise((fulfill, reject) => {
+            this.usersCollection.find({email: email}).toArray().then((result) => {
+                fulfill(result.length === 0);
+            }).catch((err) => {
+                this.logger.log("error", "MongoDBHelper:assureUniqueEmail", err);
+                reject(err);
+            });
         });
-    });
-}
+    }
 
-MongoDBHelper.prototype.assureUniqueEmail = function (email) {
-    var that = this;
-
-    return new Promise(function (fulfill, reject) {
-        that.usersCollection.find({email: email}).toArray().then(function(result) {
-            fulfill(result.length === 0);
-        }).catch((err) => {
-            that.logger.log("error", "MongoDBHelper:assureUniqueEmail", err);
-            reject(err);
+    assureUniqueUsername(username) {
+        return new Promise((fulfill, reject) => {
+            this.usersCollection.find({username: username}).toArray().then((result) => {
+                fulfill(result.length === 0);
+            }).catch((err) => {
+                this.logger.log("error", "MongoDBHelper:assureUniqueUsername", err);
+                reject(err);
+            });
         });
-    });
+    }
+
+    updateUserLocation(username, coordinates) {
+        return new Promise((fulfill, reject) => {
+            this.usersCollection.findOneAndUpdate({
+                email: email
+            }, {
+                $set: {
+                    coordinates: coordinates
+                }
+            }).then(fulfill).catch((err) => {
+                this.logger.log("error", "MongoDBHelper:updateUserLocation", err);
+                reject(err);
+            });
+        });    
+    }
 }

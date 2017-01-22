@@ -19,10 +19,10 @@ export default class PassportHelper {
             usernameField: 'username',
             passwordField: 'password',
             passReqToCallback: true
-        }, function(req, username, password, done) {
-            dbHelper.findUser(username).then(function (user) {
+        }, (req, username, password, done) => {
+            dbHelper.findUser(username).then((user) => {
                 done(null, user);
-            }).catch(function (err) {
+            }).catch((err) => {
                 done(err, null);
             });
         });
@@ -33,10 +33,10 @@ export default class PassportHelper {
             usernameField: 'email',
             passwordField: 'password',
             passReqToCallback: true
-        }, function(req, email, password, done) {
-            dbHelper.findUser(email).then(function (user) {
+        }, (req, email, password, done) => {
+            dbHelper.findUser(email).then((user) => {
                 done(null, user);
-            }).catch(function (err) {
+            }).catch((err) => {
                 done(err, null);
             });
         }));
@@ -45,23 +45,24 @@ export default class PassportHelper {
             usernameField: 'email',
             passwordField: 'password',
             passReqToCallback: true
-        }, function(req, email, password, done) {
+        }, (req, email, password, done) => {
             var username = req.body.username;
-            Promise.all([dbHelper.assureUniqueEmail(email), dbHelper.assureUniqueUsername(username)]).then(function ([uniqueE, uniqueU]) {
+            Promise.all([dbHelper.assureUniqueEmail(email), dbHelper.assureUniqueUsername(username)])
+                   .then(([uniqueE, uniqueU]) => {
                 var user = {
                     email: email,
                     username: username,
                     password: password
                 };
 
-                dbHelper.createUser(user).then(function (response) {
+                dbHelper.createUser(user).then((response) => {
                     if (response && response.result && response.result.ok) {
                         done(null, user);
                     } else {
                         done(new Error('Failed to create user.'), null);
                     }
                 })
-            }).catch(function (err) {
+            }).catch((err) => {
                 done(err, null);
             })
         }));
@@ -69,43 +70,40 @@ export default class PassportHelper {
     getSessionId(request) {
         const raw = cookie.parse(request.headers.cookie)['connect.sid'];
         if (raw) {
-        if (raw.substr(0, 2) === 's:') {
-            return signature.unsign(raw.slice(2), config.sessionSecret);
+            if (raw.substr(0, 2) === 's:') {
+                return signature.unsign(raw.slice(2), config.sessionSecret);
+            }
+
+            return false;
         }
 
         return false;
-        }
+    }
 
-        return false;
+    serializeUser() {
+        return (user, callback) => {
+            callback(null, user.email);
+        }
+    }
+
+    deserializeUser() {
+        var self = this;
+
+        return (email, done) => {
+            self.dbHelper.findUser(email).then((user) => {
+                done(null, user);
+            }).catch((err) => {
+                done(err, null);
+            });
+        }
+    }
+    isAuthorized(req, res, next) {
+        if (req.isAuthenticated()) {
+            next();
+        } else {
+            res.status(401).end('{"error": "UNAUTHORIZED"}');
+        }
     }
 }
-
-PassportHelper.prototype.serializeUser = function () {
-    var self = this;
-
-    return (user, callback) => {
-        callback(null, user.email);
-    }
-};
-
-PassportHelper.prototype.deserializeUser = function () {
-    var self = this;
-
-    return (email, done) => {
-        self.dbHelper.findUser(email).then(function (user) {
-            done(null, user);
-        }).catch(function (err) {
-            done(err, null);
-        });
-    }
-};
-
-PassportHelper.prototype.isAuthorized = function (req, res, next) {
-    if (req.isAuthenticated()) {
-        next();
-    } else {
-        res.status(401).end('{"error": "UNAUTHORIZED"}');
-    }
-};
 
 module.exports = PassportHelper;
