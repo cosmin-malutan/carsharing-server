@@ -82,21 +82,16 @@ export default class PassportHelper {
 
     serializeUser() {
         return (user, callback) => {
-            callback(null, user.email);
+            callback(null, user);
         }
     }
 
     deserializeUser() {
-        var self = this;
-
-        return (email, done) => {
-            self.dbHelper.findUser(email).then((user) => {
-                done(null, user);
-            }).catch((err) => {
-                done(err, null);
-            });
+        return (user, callback) => {
+            callback(null, user);
         }
     }
+
     isAuthorized(req, res, next) {
         if (req.isAuthenticated()) {
             next();

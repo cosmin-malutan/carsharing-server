@@ -59,7 +59,7 @@ dbHelper.init().then(() => {
 	app.use(passportHelper.passport.initialize());
 	app.use(passportHelper.passport.session());
 
-	routes(logger, app, dbHelper, passportHelper);
+	routes(logger, app, passportHelper);
 
 	const server = http.createServer(app);
 	const wss = new WebSocket.Server({ server });
@@ -122,7 +122,7 @@ function startOrdersWatch () {
 				notifyDriver(order);
 				notifyRider(order);
 			}).catch(() => {
-				driver.push(driver);
+				drivers.push(driver);
 			});
 		}
 	}, 1000);
