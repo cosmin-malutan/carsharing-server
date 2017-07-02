@@ -117,7 +117,7 @@ export default class MongoDBHelper {
                             type : "Point" ,
                             coordinates : [ driver.coords.longitude, driver.coords.latitude ]
                         },
-                        $maxDistance : 10000
+                        $maxDistance : 100000
                     }
                 }
             }, {
@@ -126,6 +126,21 @@ export default class MongoDBHelper {
                 }
             }).then(fulfill).catch((err) => {
                 this.logger.log("error", "MongoDBHelper:assignOrder", err);
+                reject(err);
+            });
+        }); 
+    }
+
+    cancelOrder(uuid) {
+        return new Promise((fulfill, reject) => {
+            this.ordersCollection.findOneAndUpdate({
+                uuid: uuid
+            }, {
+                $set: {
+                    driver: null
+                }
+            }).then(fulfill).catch((err) => {
+                this.logger.log("error", "MongoDBHelper:cancelOrder", err);
                 reject(err);
             });
         }); 

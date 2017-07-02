@@ -36,7 +36,7 @@ const logger = new(winston.Logger)({
 });
 
 let activeConnections = {};
-let drivers = [];
+let drivers = {};
 
 const store = new (mongoDBStore(session))({
   uri: `mongodb://${config.mongoDB.address}:${config.mongoDB.port}/${config.mongoDB.database}`,
@@ -72,9 +72,9 @@ dbHelper.init().then(() => {
 				return logger.log('error', `Failed to find session ${sessionId} on websocket request`);
 			}
 			let user = session.passport.user;
-			logger.log('info', `Accepted socket connection for user ${user}`);
+			logger.log('info', `Accepted socket connection for user ${user.email}`);
 
-			activeConnections[user] = ws;
+			activeConnections[user.email] = ws;
 			bindListeners(ws, user);
 		});
 	});
@@ -88,7 +88,9 @@ dbHelper.init().then(() => {
 });
 
 function bindListeners(ws, user) {
+	var client = null;
 	ws.on('message', (data) => {
+		logger.log('info', 'Recived socket message', data);
 		try {
 			let message = JSON.parse(data);
 			switch (message.type) {
@@ -97,10 +99,30 @@ function bindListeners(ws, user) {
 						logger.log('info', 'Order ', message.uuid, ' placed');
 					});
 					break;
+				case "CANCELED_ORDER":
+					dbHelper.cancelOrder(message.uuid).then(() => {
+						logger.log('info', 'Order ', message.uuid, ' canceled, now available to reassign');
+
+					});
+					break;
+				case "ACCEPTED_ORDER":
+					client = activeConnections[message.client.email];
+					notifyRider(client, message.client.email);
+					logger.log('info', 'Accepted order  ', message.uuid, ' of client ', message.client.email);
+					break;
 				case "DRIVER_AVAILABLE":
 					logger.log('info', 'DRIVER_AVAILABLE ', user);
-					if (_.matches(drivers,{ driver: user}))
-						drivers.push({driver: user, coords: message.coords});
+					drivers[user.email]  = { driver: user, coords: message.coords }
+					break;
+				case "DRIVER_UNAVAILABLE":
+					delete drivers[user.email];
+					break;
+				case "DRIVER_POSITION":
+					if (client)
+						client.send(JSON.stringify({
+							type: 'DRIVER_POSITION',
+							coords: message.coords
+						}));
 					break;
 				default:
 					logger.log('info', 'Unhandled message type: ', message.type);
@@ -113,34 +135,35 @@ function bindListeners(ws, user) {
 
 function startOrdersWatch () {
 	setInterval(() => {
-		while (drivers.length) {
-			let driver = drivers.shift();
+		logger.log('info', 'Try to find orders for drivers:', Object.keys(drivers).length);
+		while (Object.keys(drivers).length) {
+			var key = Object.keys(drivers)[0];
+			let driver = drivers[key];
+			delete drivers[key];
 			dbHelper.assignOrder(driver).then((order) => {
 				order = order.value;
 				order.driver = driver.driver;
 				logger.log('info', 'Assaigned order: ', order.uuid, 'to driver', order.driver);
 				notifyDriver(order);
-				notifyRider(order);
 			}).catch(() => {
-				drivers.push(driver);
+				drivers[key] = driver;
 			});
 		}
 	}, 1000);
 }
 
-
 function notifyDriver(order) {
-	var connection = activeConnections[order.driver];
+	var connection = activeConnections[order.driver.email];
+	logger.log('info', 'Notify driver ', order.driver.email);
 	connection.send(JSON.stringify({
 		type: 'ORDER_ASSIGNED_TO_YOU',
 		order
 	}))
 }
 
-function notifyRider(order) {
-	var connection = activeConnections[order.rider];
+function notifyRider(connection, rider) {
+	logger.log('info', 'Notify rider ', rider);
 	connection.send(JSON.stringify({
-		type: 'DRIVER_ASSIGNED_TO_YOUR_ORDER',
-		order
-	}))
+		type: 'DRIVER_ASSIGNED_TO_YOUR_ORDER'
+	}));
 }
