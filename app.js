@@ -107,8 +107,8 @@ function bindListeners(ws, user) {
 					break;
 				case "ACCEPTED_ORDER":
 					client = activeConnections[message.client.email];
-					notifyRider(client, message.client.email);
-					logger.log('info', 'Accepted order  ', message.uuid, ' of client ', message.client.email);
+					notifyRider(client, message.client.email, message.coords);
+					logger.log('info', 'Accepted order  ', message.uuid, ' of client ', message.client.email, ' driver: ', message.coords);
 					break;
 				case "DRIVER_AVAILABLE":
 					logger.log('info', 'DRIVER_AVAILABLE ', user);
@@ -161,9 +161,10 @@ function notifyDriver(order) {
 	}))
 }
 
-function notifyRider(connection, rider) {
+function notifyRider(connection, rider, coords) {
 	logger.log('info', 'Notify rider ', rider);
 	connection.send(JSON.stringify({
-		type: 'DRIVER_ASSIGNED_TO_YOUR_ORDER'
+		type: 'DRIVER_ASSIGNED_TO_YOUR_ORDER',
+		coords: coords
 	}));
 }
